@@ -1,5 +1,5 @@
 import json
-from fastapi import FastAPI
+from fastapi import FastAPI , File , UploadFile , Form , Depends , Header
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from pygments.lexers import guess_lexer
@@ -11,9 +11,18 @@ import datetime
 from fastapi import BackgroundTasks , HTTPException
 from urllib.parse import quote_plus
 import asyncio
-username = "yatish0172"
-password = quote_plus("Yatish150506")
-uri = f"mongodb+srv://{username}:{password}@cluster0.sfwsekx.mongodb.net/"
+import speech_recognition as sr
+import tempfile
+from pydub import AudioSegment
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+username = os.getenv("MONGO_USER")
+password = quote_plus(os.getenv("MONGO_PASS"))
+cluster = os.getenv("MONGO_CLUSTER")
+API_KEY = os.getenv("API_KEY")
+uri = f"mongodb+srv://{username}:{password}@{cluster}/"
 
 
 client = AsyncIOMotorClient(uri)
@@ -44,6 +53,10 @@ async def save_conversation(task:str,code:str,language:str,response_text:str):
         "created_at" : datetime.datetime.utcnow()
     }
     await history_collection.insert_one(doc)
+
+async def verify_api_key(x_api_key: str = Header(None)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid or Missing API Key")
 
       
 async def Process_code(task:str , req : "CodeRequest",background_tasks: BackgroundTasks):
@@ -76,8 +89,8 @@ async def Process_code(task:str , req : "CodeRequest",background_tasks: Backgrou
         nonlocal collected_output
         for attempt in range(max_retries):
             try:
-                async with httpx.AsyncClient() as client:
-                    async with client.stream(
+                async with httpx.AsyncClient() as http_client:
+                    async with http_client.stream(
                         "POST",
                         "http://localhost:11434/api/generate",
                         json={"model": "llama3", "prompt": base_prompt, "stream": True},
@@ -93,13 +106,13 @@ async def Process_code(task:str , req : "CodeRequest",background_tasks: Backgrou
                                     collected_output += data["response"]
                                     yield data["response"]
                                 elif data.get("done"):
-                                    yield "\n\n✅ Done!"
+                                    yield "\n\n Done!"
                                     return  # exit normally
                             except json.JSONDecodeError:
                                 continue
 
             except httpx.StreamClosed:
-                # ✅ Graceful retry handling
+                #  Graceful retry handling
                 yield f"\n Stream closed unexpectedly (attempt {attempt+1}/{max_retries}). Retrying...\n"
                 if attempt < max_retries - 1:
                     await asyncio.sleep(delay)
@@ -123,31 +136,30 @@ async def Process_code(task:str , req : "CodeRequest",background_tasks: Backgrou
 
             break  
     return StreamingResponse(attempt_stream(), media_type="text/plain")
-@app.post("/explain")
+
+@app.post("/explain",dependencies= [Depends(verify_api_key)])
 async def explain_code(req : CodeRequest, background_tasks : BackgroundTasks):
     return await Process_code("Explain",req,background_tasks )
                             
-@app.post("/debug")
+@app.post("/debug", dependencies=[Depends(verify_api_key)])
 async def Debug_code(req : CodeRequest, background_tasks : BackgroundTasks):
     return await Process_code("Debug",req,background_tasks)
 
-@app.post("/optimize")
+@app.post("/optimize", dependencies=[Depends(verify_api_key)])
 async def optimize_code(req:CodeRequest, background_tasks : BackgroundTasks):
     return await Process_code("Optimize",req,background_tasks)
             
-@app.get("/history")
+@app.get("/history", dependencies=[Depends(verify_api_key)])
 async def get_history():
     """Fetch all stored conversations from MongoDB Atlas."""
     records = []
     async for doc in history_collection.find().sort("created_at",-1):
         doc["_id"] = str(doc["_id"])
-        doc["created_at"] = doc["created_at"].strftime("%Y-%m-%d %H:%M:%S")
-
-    
+        doc["created_at"] = doc["created_at"].strftime("%Y-%m-%d %H:%M:%S")  
         records.append(doc)
     return records
 
-@app.delete ("/history/{conversation_id}")
+@app.delete ("/history/{conversation_id}", dependencies=[Depends(verify_api_key)])
 async def delete_conversation(conversation_id:str):
     """delete one convo from database"""
     result = await history_collection.delete_one({"_id" : ObjectId(conversation_id)})
@@ -155,13 +167,12 @@ async def delete_conversation(conversation_id:str):
         raise HTTPException (status_code = 404 , detail = "Conversation not found")
     return {"message":f"Conversation {conversation_id} deleted successfully!"}
   
-@app.delete ("/history/deleteall")
+@app.delete ("/history/deleteall", dependencies=[Depends(verify_api_key)])
 async def clear_history():
     """Clear all conversation history"""
     await history_collection.delete_many({})
-    return ({"message":"All conversations have been cleared!"})  
-    
-    
+    return {"message":"All conversations have been cleared!"}
+
 @app.get("/")
 def home():
     return {"message": "Backend running with Ollama "}
