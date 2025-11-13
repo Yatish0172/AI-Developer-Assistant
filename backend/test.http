@@ -1,6 +1,0 @@
-POST http://127.0.0.1:8000/explain
-Content-Type: application/json
-
-{
-  "code": "for i in range(5): print(i)"
-}
