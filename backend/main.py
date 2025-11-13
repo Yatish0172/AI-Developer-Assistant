@@ -3,7 +3,7 @@ from fastapi import FastAPI , File , UploadFile , Form , Depends , Header
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from pygments.lexers import guess_lexer
-from pygments.util import ClassNotFound
+from pygments.util import ClassNotFound 
 import httpx
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
@@ -14,20 +14,33 @@ import asyncio
 import speech_recognition as sr
 import tempfile
 from pydub import AudioSegment
+from pydub.utils import which
+import subprocess
 from dotenv import load_dotenv
-import os
-
+import os , subprocess
 load_dotenv()
+#Database setup
 username = os.getenv("MONGO_USER")
 password = quote_plus(os.getenv("MONGO_PASS"))
 cluster = os.getenv("MONGO_CLUSTER")
-API_KEY = os.getenv("API_KEY")
 uri = f"mongodb+srv://{username}:{password}@{cluster}/"
-
-
 client = AsyncIOMotorClient(uri)
 db = client["Developer_Assistant"]
 history_collection = db["conversations"]
+
+API_KEY = os.getenv("API_KEY")
+
+#Audio_setup
+ffmpeg_path = which("ffmpeg") or r"C:\Program Files (x86)\ffmpeg-8.0-essentials_build\bin\ffmpeg.exe"
+ffprobe_path = which("ffprobe") or r"C:\Program Files (x86)\ffmpeg-8.0-essentials_build\bin\ffprobe.exe"
+AudioSegment.converter = ffmpeg_path
+AudioSegment.ffprobe = ffprobe_path
+os.environ["PATH"] += os.pathsep + os.path.dirname(ffmpeg_path)
+try:
+    subprocess.run([ffmpeg_path, "-version"], capture_output=True, text=True, check=True)
+    print("✅ FFmpeg is working correctly!\n")
+except Exception as e:
+    print("❌ FFmpeg check failed:", e, "\n")
 
 
 app = FastAPI(title ="AI Developer Assistant", version="1.0")
@@ -155,7 +168,7 @@ async def get_history():
     records = []
     async for doc in history_collection.find().sort("created_at",-1):
         doc["_id"] = str(doc["_id"])
-        doc["created_at"] = doc["created_at"].strftime("%Y-%m-%d %H:%M:%S")  
+        doc["created_at"] = doc["created_at"].strftime("%Y-%m-%d %H:%M:%S")
         records.append(doc)
     return records
 
@@ -172,6 +185,51 @@ async def clear_history():
     """Clear all conversation history"""
     await history_collection.delete_many({})
     return {"message":"All conversations have been cleared!"}
+
+@app.post("/voice-command", dependencies=[Depends(verify_api_key)])
+async def process_voice_commands(
+    background_tasks : BackgroundTasks,   
+    file : UploadFile = File(...),
+    code:str = Form(...)
+        ):
+    try:    
+        with tempfile.NamedTemporaryFile(delete=False,suffix=".wav") as temp_file:
+            contents = await file.read()
+            temp_file.write(contents)
+            temp_file_path = temp_file.name
+        
+        if file.filename.endswith(".mp3"):
+            sound = AudioSegment.from_mp3(temp_file_path)
+            wav_path = temp_file_path.replace(".mp3",".wav")
+            sound.export(wav_path, format="wav")
+            temp_file_path= wav_path
+        
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(temp_file_path) as source:
+            audio = recognizer.record(source)
+        
+        voice_text = recognizer.recognize_google(audio).lower()
+        print (f"Voice command detected: {voice_text}")
+
+
+    # Task intect   
+        if "explain" in voice_text:
+            task = "Explain"
+        elif "debug" in voice_text:
+            task = "Debug"
+        elif "optimize" in voice_text or "improve" in voice_text:
+            task = "Optimize"
+        else :
+            raise HTTPException(status_code=404 ,detail=f"Unrecognized intent in voice: {voice_text}")
+        req = CodeRequest(code=code)
+        return await Process_code(task , req , background_tasks)
+    except sr.UnknownValueError:
+        raise HTTPException(status_code=400, detail="Could not understand audio")
+    finally:
+        try:
+            os.remove(temp_file_path)
+        except Exception :
+            pass
 
 @app.get("/")
 def home():
