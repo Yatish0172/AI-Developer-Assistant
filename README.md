@@ -1,6 +1,8 @@
 # 📌 **AI Developer Assistant**
 An intelligent backend-powered assistant that helps developers **explain**, **debug**, and **optimize code** using natural language or voice commands.  
-Built with **FastAPI, MongoDB Atlas, Ollama (Llama 3), and Speech Recognition**.
+Now upgraded with **multi-model LLM support**, including **Qwen2.5-Coder** for code reasoning and **DeepSeek-Coder-V2** for diagram generation.
+
+Built with **FastAPI, MongoDB Atlas, Local LLM Inference, and Speech Recognition**.
 
 ---
 
@@ -8,35 +10,54 @@ Built with **FastAPI, MongoDB Atlas, Ollama (Llama 3), and Speech Recognition**.
 
 ### ✔ Code Understanding  
 - Explain code line-by-line  
-- Debug with detailed fixes  
-- Optimize code for performance and readability  
+- High-level logic breakdown  
+- Detect code intent and flow  
+
+### ✔ Debugging & Optimization  
+- Identify errors and incorrect logic  
+- Suggest corrected versions  
+- Improve performance and readability
+
+### ✔ Multi-Model AI Engine  
+Uses two specialized local AI models internally:  
+- **Qwen2.5-Coder** → explanation, debugging, optimization  
+- **DeepSeek-Coder-V2** → structured reasoning (future: diagrams/flowcharts)
+
+Backend intelligently selects the model based on the task.
 
 ### ✔ Voice Command Support  
-Upload an audio clip like:  
+Upload an audio clip such as:  
 > “Explain this code”  
 > “Debug this”  
-> “Optimize this code”
+> “Optimize this function”
 
-The backend detects your intent using **speech-to-text** and processes your code automatically.
+Speech is converted to text and automatically processed.
 
-### ✔ Secure API Key System  
-All routes are protected with a custom API key middleware.
+### ✔ Secure API Key Protection  
+All endpoints are protected through a custom API-key authentication middleware.
 
 ### ✔ MongoDB Conversation History  
 Stores:  
 - Task (explain / debug / optimize)  
-- Code snippet  
-- Language (detected automatically)  
+- Original code snippet  
+- Detected language  
 - Full AI response  
 - Timestamp  
 
-Provides:  
-- Fetch history  
-- Delete one conversation  
-- Clear all conversations  
+Supports:  
+- Fetch entire history  
+- Delete individual logs  
+- Clear all logs
 
 ### ✔ Streaming Responses  
-Uses **httpx streaming** for real-time AI responses (like ChatGPT typing effect).
+Outputs token-by-token responses using **httpx streaming**, giving smooth real-time feedback.
+
+### ✔ Future: Real-Time Flowchart Generation  
+Upcoming capability where the backend:  
+- Converts code to flowcharts  
+- Generates Mermaid diagrams  
+- Updates diagrams on file save  
+- Integrates with VS Code Extension UI
 
 ---
 
@@ -45,7 +66,9 @@ Uses **httpx streaming** for real-time AI responses (like ChatGPT typing effect)
 | Component | Technology |
 |----------|------------|
 | Backend | FastAPI |
-| AI Model | Ollama (Llama 3) |
+| Code AI Model | Qwen2.5-Coder |
+| Diagram/Structure Model | DeepSeek-Coder-V2 |
+| LLM Engine | Local inference engine (Ollama-compatible) |
 | Speech Recognition | pydub, SpeechRecognition |
 | Database | MongoDB Atlas |
 | Authentication | Custom API Key |
@@ -62,8 +85,13 @@ MONGO_USER=your_mongodb_user
 MONGO_PASS=your_mongodb_password
 MONGO_CLUSTER=your_cluster.mongodb.net
 API_KEY=YourCustomAPIKey123
-FFMPEG_PATH=C:\Program Files (x86)\ffmpeg-8.0-essentials_build\bin\ffmpeg.exe
-FFPROBE_PATH=C:\Program Files (x86)\ffmpeg-8.0-essentials_build\bin\ffprobe.exe
+```
+
+Ensure local LLM models are available:
+
+```
+ollama pull qwen2.5-coder
+ollama pull deepseek-coder-v2
 ```
 
 ---
@@ -71,10 +99,10 @@ FFPROBE_PATH=C:\Program Files (x86)\ffmpeg-8.0-essentials_build\bin\ffprobe.exe
 ## ▶ Running the Server
 
 ```
-uvicorn main:app --reload
+uvicorn main:app --reload --port 9912
 ```
 
-Swagger Docs → http://127.0.0.1:8000/docs
+Swagger Docs → http://127.0.0.1:9912/docs
 
 ---
 
@@ -95,11 +123,11 @@ x-api-key: YourCustomAPIKey123
 
 ```
 AI-Developer-Assistant/
-│── backend/
-│   ├── main.py
-│   ├── requirements.txt
-│   ├── .env
+│── main.py
+│── requirements.txt
+│── .env
 │── README.md
+│── /models (optional future)
 ```
 
 ---
@@ -108,4 +136,4 @@ AI-Developer-Assistant/
 
 **Yatish Sharma**  
 AI & Full-Stack Developer  
-UPES Dehradun
+UPES Dehradun  
