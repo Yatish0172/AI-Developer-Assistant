@@ -180,7 +180,47 @@ async def Process_code(task:str , req : "CodeRequest",background_tasks: Backgrou
             except Exception:
                 pass  
     return StreamingResponse(generate(), media_type="text/plain")
-#///////////////////////////////////////////////////////////////////////////////////////////
+#/////////////////////////////////////////////////////////////////////////a/////////////////////////////////
+async def Process_diagram(req: CodeRequest, background_tasks: BackgroundTasks):
+    task = "diagram"
+    language = req.language or detect_language(req.code)
+
+    prompt = f"""
+Convert the following {language} code into a Mermaid flowchart.
+
+Rules:
+- Use 'flowchart TD'
+- Keep node labels short but meaningful
+- Include functions, loops, conditions, returns
+- Do NOT include ``` or markdown formatting
+- ONLY return Mermaid code
+
+Code:{req.code}
+"""
+
+    diagram_text = ""
+
+    async for data in llm_run(DIAGRAM_MODEL, prompt, stream=False):
+        if not data:
+            continue
+
+        if isinstance(data, dict) and data.get("response", "").startswith("[ERROR]"):
+            return data["response"]
+
+        if isinstance(data, dict) and data.get("response"):
+            diagram_text += data["response"]
+
+    # Save in DB
+    if diagram_text.strip():
+        try:
+            background_tasks.add_task(
+                save_conversation, task, req.code, language, diagram_text
+            )
+        except:
+            pass
+
+    return diagram_text.strip()
+#//////////////////////////////////////////////////////////////////////////////////////////////////////////
 @app.post("/explain",dependencies= [Depends(verify_api_key)])
 async def explain_code(req : CodeRequest, background_tasks : BackgroundTasks):
     return await Process_code("Explain",req,background_tasks )
@@ -239,7 +279,11 @@ async def process_voice_commands(
         except:
             pass
 #/////////////////////////////////////////////////////////////////////////////////////////////////////
-# @app.post("/diagram",dependencies=[Depends(verify_api_key)])
+@app.post("/diagram", dependencies=[Depends(verify_api_key)])
+async def diagram(req: CodeRequest, background_tasks: BackgroundTasks):
+    result = await Process_diagram(req, background_tasks)
+    return {"diagram": result}
+
 #////////////////////////////////////////////////////////////////////////////////////////////////////          
 @app.get("/history", dependencies=[Depends(verify_api_key)])
 async def get_history():
