@@ -1,8 +1,6 @@
 # 📌 **AI Developer Assistant**
-An intelligent backend-powered assistant that helps developers **explain**, **debug**, and **optimize code** using natural language or voice commands.  
-Now upgraded with **multi-model LLM support**, including **Qwen2.5-Coder** for code reasoning and **DeepSeek-Coder-V2** for diagram generation.
-
-Built with **FastAPI, MongoDB Atlas, Local LLM Inference, and Speech Recognition**.
+An intelligent backend-powered assistant that helps developers **explain**, **debug**, **optimize**, and now **visualize code with flowcharts** — using natural language, voice commands, or full-file analysis.  
+Built with **FastAPI, MongoDB Atlas, Ollama (Qwen & DeepSeek), and Speech Recognition**.
 
 ---
 
@@ -10,54 +8,53 @@ Built with **FastAPI, MongoDB Atlas, Local LLM Inference, and Speech Recognition
 
 ### ✔ Code Understanding  
 - Explain code line-by-line  
-- High-level logic breakdown  
-- Detect code intent and flow  
+- Debug with detailed fixes  
+- Optimize code for performance and readability  
 
-### ✔ Debugging & Optimization  
-- Identify errors and incorrect logic  
-- Suggest corrected versions  
-- Improve performance and readability
+### ✔ 📊 Auto-Generated Flowcharts (NEW)  
+Convert any code file into a **Mermaid flowchart** using the `/diagram` endpoint.  
+Perfect for:
+- Understanding complex logic  
+- Documenting systems  
+- Real-time diagram updates in your VS Code extension  
 
-### ✔ Multi-Model AI Engine  
-Uses two specialized local AI models internally:  
-- **Qwen2.5-Coder** → explanation, debugging, optimization  
-- **DeepSeek-Coder-V2** → structured reasoning (future: diagrams/flowcharts)
+Uses **DeepSeek Coder V2** (fast + structured) for diagram generation.
 
-Backend intelligently selects the model based on the task.
-
-### ✔ Voice Command Support  
-Upload an audio clip such as:  
+### ✔ 🎤 Voice Command Support  
+Upload an audio clip like:  
 > “Explain this code”  
 > “Debug this”  
-> “Optimize this function”
+> “Optimize this”  
 
-Speech is converted to text and automatically processed.
+The backend uses **speech-to-text** to detect your intent automatically.
 
-### ✔ Secure API Key Protection  
-All endpoints are protected through a custom API-key authentication middleware.
+### ✔ 🔐 Secure API Key System  
+All routes include custom API-key protection.
 
-### ✔ MongoDB Conversation History  
+### ✔ 🗂 MongoDB Conversation History  
 Stores:  
-- Task (explain / debug / optimize)  
-- Original code snippet  
-- Detected language  
-- Full AI response  
+- Task type (explain/debug/optimize/diagram)  
+- Code snippet  
+- Language detected  
+- AI output  
 - Timestamp  
 
 Supports:  
-- Fetch entire history  
-- Delete individual logs  
-- Clear all logs
+- Fetch full history  
+- Delete one entry  
+- Clear entire history  
 
-### ✔ Streaming Responses  
-Outputs token-by-token responses using **httpx streaming**, giving smooth real-time feedback.
+### ✔ ⚡ Streaming Responses  
+Uses async **httpx streaming** for real-time model responses (like ChatGPT typing).
 
-### ✔ Future: Real-Time Flowchart Generation  
-Upcoming capability where the backend:  
-- Converts code to flowcharts  
-- Generates Mermaid diagrams  
-- Updates diagrams on file save  
-- Integrates with VS Code Extension UI
+---
+
+## 🧠 Auto Model Selection  
+The system smartly uses the right model for the right task:
+- **Qwen2.5-Coder** → Explain / Debug / Optimize  
+- **DeepSeek-Coder-V2** → Flowcharts & Mermaid diagrams  
+
+No manual switching required.
 
 ---
 
@@ -66,12 +63,11 @@ Upcoming capability where the backend:
 | Component | Technology |
 |----------|------------|
 | Backend | FastAPI |
-| Code AI Model | Qwen2.5-Coder |
-| Diagram/Structure Model | DeepSeek-Coder-V2 |
-| LLM Engine | Local inference engine (Ollama-compatible) |
+| Code AI Model | Qwen2.5-Coder (Ollama) |
+| Diagram Model | DeepSeek-Coder-V2 (Ollama) |
 | Speech Recognition | pydub, SpeechRecognition |
 | Database | MongoDB Atlas |
-| Authentication | Custom API Key |
+| Auth | Custom API Key |
 | Streaming | httpx Async Streaming |
 
 ---
@@ -87,29 +83,22 @@ MONGO_CLUSTER=your_cluster.mongodb.net
 API_KEY=YourCustomAPIKey123
 ```
 
-Ensure local LLM models are available:
-
-```
-ollama pull qwen2.5-coder
-ollama pull deepseek-coder-v2
-```
-
 ---
 
 ## ▶ Running the Server
 
 ```
-uvicorn main:app --reload --port 9912
+uvicorn main:app --reload
 ```
 
-Swagger Docs → http://127.0.0.1:9912/docs
+Swagger Docs → http://127.0.0.1:8000/docs
 
 ---
 
 ## 🧪 Voice Command Test (Postman)
 
 Form Data:
-- `file`: audio file (.wav / .mp3)
+- `file`: audio file (.wav / .mp3)  
 - `code`: your code snippet
 
 Headers:
@@ -119,21 +108,39 @@ x-api-key: YourCustomAPIKey123
 
 ---
 
-## 📂 Project Structure
+## 🧩 Diagram API Example
 
+**POST:** `/diagram`  
+**Body:**
+```json
+{
+  "code": "your full source code here"
+}
 ```
-AI-Developer-Assistant/
-│── main.py
-│── requirements.txt
-│── .env
-│── README.md
-│── /models (optional future)
+
+**Returns:**
+```json
+{
+  "diagram": "flowchart TD; A-->B; ..."
+}
 ```
 
 ---
 
-## 👨‍💻 Author
+## 📂 Project Structure
 
+```
+AI-Developer-Assistant/
+│── backend/
+│   ├── main.py
+│   ├── requirements.txt
+│   ├── .env
+│── README.md
+```
+
+---
+
+## 👨‍💻 Author  
 **Yatish Sharma**  
 AI & Full-Stack Developer  
-UPES Dehradun  
+UPES Dehradun
