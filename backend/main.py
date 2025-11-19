@@ -138,6 +138,21 @@ async def Process_code(task:str , req : "CodeRequest",background_tasks: Backgrou
             f"Optimize this {language} code for performance and readability. "
             f"Explain what changes were made:\n\n{req.code}"
         )
+    elif task == "comment":
+        base_prompt += (
+        f"Add professional inline comments and function descriptions to this {language} code.\n"
+        f"Rules:\n"
+        f"- Add a short description above each function.\n"
+        f"- Use inline comments only for important logic.\n"
+        f"- Do NOT comment trivial lines.\n"
+        f"- Keep it concise & professional.\n"
+        f"Return only the updated code.\n\n"
+        f"Do NOT alter logic or variable names."
+
+        f"{req.code}"
+    )
+
+    
     else:
        raise HTTPException(400, f"Unknown task '{task}'")
 
@@ -220,6 +235,7 @@ Code:{req.code}
             pass
 
     return diagram_text.strip()
+
 #//////////////////////////////////////////////////////////////////////////////////////////////////////////
 @app.post("/explain",dependencies= [Depends(verify_api_key)])
 async def explain_code(req : CodeRequest, background_tasks : BackgroundTasks):
@@ -232,6 +248,10 @@ async def Debug_code(req : CodeRequest, background_tasks : BackgroundTasks):
 @app.post("/optimize", dependencies=[Depends(verify_api_key)])
 async def optimize_code(req:CodeRequest, background_tasks : BackgroundTasks):
     return await Process_code("Optimize",req,background_tasks)
+
+@app.post("/comment", dependencies=[Depends(verify_api_key)])
+async def comment_code(req:CodeRequest, background_tasks : BackgroundTasks):
+    return await Process_code("Comment",req,background_tasks)
 
 @app.post("/voice-command", dependencies=[Depends(verify_api_key)])
 async def process_voice_commands(

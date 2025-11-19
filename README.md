@@ -9,7 +9,13 @@ Built with **FastAPI, MongoDB Atlas, Ollama (Qwen & DeepSeek), and Speech Recogn
 ### ✔ Code Understanding  
 - Explain code line-by-line  
 - Debug with detailed fixes  
-- Optimize code for performance and readability  
+- Optimize code for performance and readability 
+
+### 📝 AI-Powered Code Commenting
+- New "Comment" button in editor
+- Automatically inserts inline comments & function descriptions into the code
+- Helps explain complex logic without leaving the code file
+
 
 ### ✔ 📊 Auto-Generated Flowcharts (NEW)  
 Convert any code file into a **Mermaid flowchart** using the `/diagram` endpoint.  
@@ -107,6 +113,7 @@ x-api-key: YourCustomAPIKey123
 ```
 
 ---
+
 
 ## 🧩 Diagram API Example
 
