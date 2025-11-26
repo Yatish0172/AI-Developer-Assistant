@@ -150,9 +150,18 @@ async def Process_code(task:str , req : "CodeRequest",background_tasks: Backgrou
         f"Do NOT alter logic or variable names."
 
         f"{req.code}"
+        )
+    elif task == "convert":
+        base_prompt += (
+        f"Convert this code to {req.language}.\n"
+        f"Rules:\n"
+        f"- Keep logic the same\n"
+        f"- Use correct syntax for {req.language}\n"
+        f"- Follow best coding practices\n"
+        f"- Return only the final converted code\n\n"
+        f"{req.code}"
     )
 
-    
     else:
        raise HTTPException(400, f"Unknown task '{task}'")
 
@@ -316,6 +325,10 @@ async def get_history():
         doc["created_at"] = doc["created_at"].strftime("%Y-%m-%d %H:%M:%S")
         records.append(doc)
     return records
+
+@app.post("/convert", dependencies=[Depends(verify_api_key)])
+async def convert_code(req: CodeRequest, background_tasks: BackgroundTasks):
+    return await Process_code("Convert", req, background_tasks)
 
 @app.delete ("/history/{conversation_id}", dependencies=[Depends(verify_api_key)])
 async def delete_conversation(conversation_id:str):

@@ -12,10 +12,32 @@ Built with **FastAPI, MongoDB Atlas, Ollama (Qwen & DeepSeek), and Speech Recogn
 - Optimize code for performance and readability 
 
 ### 📝 AI-Powered Code Commenting
-- New "Comment" button in editor
-- Automatically inserts inline comments & function descriptions into the code
-- Helps explain complex logic without leaving the code file
+- New "Comment" button in editor  
+- Automatically inserts inline comments & function descriptions into the code  
+- Helps explain complex logic without leaving the code file  
 
+### 🔁 💻 Multi-Language Code Conversion (NEW)
+Convert existing code into another programming language using the `/convert` endpoint.
+
+- Supports multiple languages (Python, JavaScript, Java, C++, Go, etc.)
+- Maintains original logic and structure
+- Follows best coding practices of the target language
+
+**Example Request:**
+```json
+POST /convert
+{
+  "code": "your original code here",
+  "language": "Python"
+}
+```
+
+**Response:**
+```json
+{
+  "converted_code": "Equivalent code in selected language..."
+}
+```
 
 ### ✔ 📊 Auto-Generated Flowcharts (NEW)  
 Convert any code file into a **Mermaid flowchart** using the `/diagram` endpoint.  
@@ -113,7 +135,6 @@ x-api-key: YourCustomAPIKey123
 ```
 
 ---
-
 
 ## 🧩 Diagram API Example
 
