@@ -39,12 +39,65 @@ POST /convert
 }
 ```
 
-### ✔ 📊 Auto-Generated Flowcharts (NEW)  
-Convert any code file into a **Mermaid flowchart** using the `/diagram` endpoint.  
-Perfect for:
-- Understanding complex logic  
-- Documenting systems  
-- Real-time diagram updates in your VS Code extension  
+⚡ Real-Time Flowchart Rendering (Live Preview in Editor)
+
+Your AI Developer Assistant supports live diagram updates directly in the code editor through frontend integration (coming soon).
+
+🔹 As the developer writes code, your extension triggers /diagram in the backend
+🔹 The backend generates Mermaid syntax
+🔹 The frontend renders it above the code in real time (like AI-powered “Explain” panels in VS Code)
+
+📌 Example workflow:
+
+1. User types code in the editor
+
+
+2. The extension sends periodic updates or triggers on save
+
+
+3. Backend responds with Mermaid flowchart
+
+
+4. UI displays the diagram above the code block
+
+
+5. Diagram auto-refreshes with every code update
+
+
+
+╔═════════════════════════════╗
+║     Live Diagram Preview     ║
+╚═════════════════════════════╝
+
+flowchart TD
+    A[Start] --> B{Check Condition}
+    B -->|True| C[Execute Function A]
+    B -->|False| D[Return Error]
+    C --> E[End]
+
+
+---
+
+🛠 Frontend Integration (Concept Example)
+
+// VS Code Extension (pseudo-logic)
+editor.onDidChangeModelContent(() => {
+  fetch("/diagram", { code: currentCode })
+    .then(res => updateDiagramPanel(res.diagram));
+});
+
+
+---
+
+📍 Why It’s Powerful
+
+Before	Now
+
+Manually creating flowcharts	Auto-generated
+Only on-demand	Live & continuous
+Static documentation	Dynamic visual code understanding
+
+---
 
 Uses **DeepSeek Coder V2** (fast + structured) for diagram generation.
 
