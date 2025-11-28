@@ -39,7 +39,7 @@ POST /convert
 }
 ```
 
-⚡ Real-Time Flowchart Rendering (Live Preview in Editor)
+### ⚡ Real-Time Flowchart Rendering (Live Preview in Editor)
 
 Your AI Developer Assistant supports live diagram updates directly in the code editor through frontend integration (coming soon).
 
@@ -47,22 +47,17 @@ Your AI Developer Assistant supports live diagram updates directly in the code e
 🔹 The backend generates Mermaid syntax
 🔹 The frontend renders it above the code in real time (like AI-powered “Explain” panels in VS Code)
 
-📌 Example workflow:
+#📌 Example workflow:
 
 1. User types code in the editor
 
-
 2. The extension sends periodic updates or triggers on save
-
 
 3. Backend responds with Mermaid flowchart
 
-
 4. UI displays the diagram above the code block
 
-
 5. Diagram auto-refreshes with every code update
-
 
 
 ╔═════════════════════════════╗
@@ -74,8 +69,6 @@ flowchart TD
     B -->|True| C[Execute Function A]
     B -->|False| D[Return Error]
     C --> E[End]
-
-
 ---
 
 🛠 Frontend Integration (Concept Example)
@@ -89,9 +82,9 @@ editor.onDidChangeModelContent(() => {
 
 ---
 
-📍 Why It’s Powerful
+##📍 Why It’s Powerful
 
-Before	Now
+#Before	 Now
 
 Manually creating flowcharts	Auto-generated
 Only on-demand	Live & continuous
