@@ -1,29 +1,23 @@
-# 📌 **AI Developer Assistant**
-An intelligent backend-powered assistant that helps developers **explain**, **debug**, **optimize**, and now **visualize code with flowcharts** — using natural language, voice commands, or full-file analysis.  
-Built with **FastAPI, MongoDB Atlas, Ollama (Qwen & DeepSeek), and Speech Recognition**.
+# AI Developer Assistant
 
----
+An intelligent backend-powered assistant that helps developers **explain**, **debug**, **optimize**, **convert**, and **visualize code with flowcharts** using natural language, voice commands, or full-file analysis.
 
-## 🚀 Features
+Built using **FastAPI, Ollama (Qwen2.5 Coder), MongoDB Atlas**, and **Speech Recognition**.
 
-### ✔ Code Understanding  
-- Explain code line-by-line  
-- Debug with detailed fixes  
-- Optimize code for performance and readability 
+## Features
 
-### 📝 AI-Powered Code Commenting
-- New "Comment" button in editor  
-- Automatically inserts inline comments & function descriptions into the code  
-- Helps explain complex logic without leaving the code file  
+### Code Understanding
+- Explain code line by line
+- Debug issues with fixes
+- Optimize code for performance and readability
 
-### 🔁 💻 Multi-Language Code Conversion (NEW)
-Convert existing code into another programming language using the `/convert` endpoint.
+### AI-Powered Code Commenting
+- Automatically adds professional inline comments and function descriptions
 
-- Supports multiple languages (Python, JavaScript, Java, C++, Go, etc.)
-- Maintains original logic and structure
-- Follows best coding practices of the target language
+### Multi-Language Code Conversion
+Convert code into another programming language using `/convert`.
 
-**Example Request:**
+#### Example Request
 ```json
 POST /convert
 {
@@ -32,77 +26,56 @@ POST /convert
 }
 ```
 
-**Response:**
-```json
-{
-  "converted_code": "Equivalent code in selected language..."
-}
-```
+### Real-Time Flowchart Generation
+Generates Mermaid flowcharts based on input code using `/diagram`.
 
-### ✔ 📊 Auto-Generated Flowcharts (NEW)  
-Convert any code file into a **Mermaid flowchart** using the `/diagram` endpoint.  
-Perfect for:
-- Understanding complex logic  
-- Documenting systems  
-- Real-time diagram updates in your VS Code extension  
+## Workflow Example
 
-Uses **DeepSeek Coder V2** (fast + structured) for diagram generation.
+1. User writes or pastes code
+2. Extension sends request to `/diagram`
+3. Backend generates Mermaid code
+4. UI renders diagram above the code
 
-### ✔ 🎤 Voice Command Support  
-Upload an audio clip like:  
-> “Explain this code”  
-> “Debug this”  
-> “Optimize this”  
+### Voice Command Support
+Upload an audio file and speak commands like:
+- "Explain this code"
+- "Debug this"
+- "Optimize this"
 
-The backend uses **speech-to-text** to detect your intent automatically.
+### Secure API Key Validation
+All routes require a valid `x-api-key` header.
 
-### ✔ 🔐 Secure API Key System  
-All routes include custom API-key protection.
+### MongoDB Conversation History
+Stores:
+- Task type
+- Code
+- Language
+- AI response
+- Timestamp
 
-### ✔ 🗂 MongoDB Conversation History  
-Stores:  
-- Task type (explain/debug/optimize/diagram)  
-- Code snippet  
-- Language detected  
-- AI output  
-- Timestamp  
+Supports:
+- Fetch history
+- Delete single history entry
+- Clear all history
 
-Supports:  
-- Fetch full history  
-- Delete one entry  
-- Clear entire history  
+### Streaming Responses
+Generates responses in real-time like ChatGPT.
 
-### ✔ ⚡ Streaming Responses  
-Uses async **httpx streaming** for real-time model responses (like ChatGPT typing).
+## Technology Stack
 
----
-
-## 🧠 Auto Model Selection  
-The system smartly uses the right model for the right task:
-- **Qwen2.5-Coder** → Explain / Debug / Optimize  
-- **DeepSeek-Coder-V2** → Flowcharts & Mermaid diagrams  
-
-No manual switching required.
-
----
-
-## 🏗 Tech Stack
-
-| Component | Technology |
-|----------|------------|
+| Component | Implementation |
+|-----------|----------------|
 | Backend | FastAPI |
-| Code AI Model | Qwen2.5-Coder (Ollama) |
-| Diagram Model | DeepSeek-Coder-V2 (Ollama) |
+| AI Model | Qwen2.5-Coder |
+| Diagram Model | Qwen2.5-Coder |
 | Speech Recognition | pydub, SpeechRecognition |
 | Database | MongoDB Atlas |
+| Streaming | httpx Async |
 | Auth | Custom API Key |
-| Streaming | httpx Async Streaming |
 
----
+## Environment Setup
 
-## 🔧 Environment Setup
-
-Create a `.env` file:
+Create `.env` file:
 
 ```
 MONGO_USER=your_mongodb_user
@@ -111,64 +84,65 @@ MONGO_CLUSTER=your_cluster.mongodb.net
 API_KEY=YourCustomAPIKey123
 ```
 
----
-
-## ▶ Running the Server
+## Running the Server
 
 ```
 uvicorn main:app --reload
 ```
 
-Swagger Docs → http://127.0.0.1:8000/docs
-
----
-
-## 🧪 Voice Command Test (Postman)
-
-Form Data:
-- `file`: audio file (.wav / .mp3)  
-- `code`: your code snippet
-
-Headers:
+Swagger UI is available at:
 ```
-x-api-key: YourCustomAPIKey123
+http://127.0.0.1:8000/docs
 ```
 
----
+## Example: Diagram API
 
-## 🧩 Diagram API Example
-
-**POST:** `/diagram`  
-**Body:**
 ```json
+POST /diagram
 {
   "code": "your full source code here"
 }
 ```
 
-**Returns:**
+Response:
 ```json
 {
   "diagram": "flowchart TD; A-->B; ..."
 }
 ```
 
----
-
-## 📂 Project Structure
+## Project Structure
 
 ```
 AI-Developer-Assistant/
-│── backend/
-│   ├── main.py
-│   ├── requirements.txt
-│   ├── .env
+│── main.py
+│── requirements.txt
+│── .env
 │── README.md
 ```
+## Future Plans
 
----
+The project is being extended into a **VS Code Extension** with the following goals:
 
-## 👨‍💻 Author  
+- **Real-time AI assistance inside the editor** (explain, debug, optimize without leaving VS Code)
+- **Live flowchart rendering above code during typing**
+- **Voice-command support integrated directly into VS Code**
+- **Automatic code language detection and model selection**
+- **Intelligent suggestions and code generation while writing code**
+- **Support for multiple file types and frameworks**
+- **Shortcut-based interactions** (e.g., `Ctrl + Alt + E` to explain code)
+- **Seamless extension-to-backend communication using REST APIs**
+
+The backend developed in this project will power the VS Code extension, ensuring that AI capabilities work efficiently and in real time.
+
+A prototype extension structure will be implemented using:
+- `TypeScript` and `VS Code Extension API`
+- REST API integration to call backend endpoints
+- Local caching and performance optimization
+
+Development will begin after stabilizing the backend APIs.
+
+## Author
 **Yatish Sharma**  
 AI & Full-Stack Developer  
 UPES Dehradun
