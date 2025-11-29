@@ -1,4 +1,5 @@
 # AI Developer Assistant
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 An intelligent backend-powered assistant that helps developers **explain**, **debug**, **optimize**, **convert**, and **visualize code with flowcharts** using natural language, voice commands, or full-file analysis.
 
@@ -180,7 +181,13 @@ A prototype extension structure will be implemented using:
 
 Development will begin after stabilizing the backend APIs.
 
+
 ## Author
 **Yatish Sharma**  
 AI & Full-Stack Developer  
 UPES Dehradun
+
+## © Copyright
+AI Developer Assistant (Backend & Future VS Code Extension)  
+© 2025 Yatish Sharma. All rights reserved.  
+Licensed under the MIT License.
