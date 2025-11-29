@@ -22,7 +22,7 @@ API_KEY = os.getenv("API_KEY")
 
 # OLLAMA CONFIG
 CODE_MODEL = "qwen2.5-coder"          # Best for explaining, debugging, optimizing
-DIAGRAM_MODEL = "deepseek-coder-v2"   # Fastest + best for Mermaid flowcharts
+DIAGRAM_MODEL = "qwen2.5-coder"   # Fastest + best for Mermaid flowcharts
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
 #Database setup
@@ -210,20 +210,18 @@ async def Process_diagram(req: CodeRequest, background_tasks: BackgroundTasks):
     language = req.language or detect_language(req.code)
 
     prompt = f"""
-Convert the following {language} code into a Mermaid flowchart.
-
+You are an expert software architect. Convert the following {language} code into a Mermaid flowchart.
 Rules:
-- Use 'flowchart TD'
+- Use flowchart TD
 - Keep node labels short but meaningful
 - Include functions, loops, conditions, returns
 - Do NOT include ``` or markdown formatting
 - ONLY return Mermaid code
-
-Code:{req.code}
+Code:\n\n{req.code}
 """
 
     diagram_text = ""
-
+    print(f" Sending prompt to diagram model:\n{prompt}")
     async for data in llm_run(DIAGRAM_MODEL, prompt, stream=False):
         if not data:
             continue
