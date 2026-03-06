@@ -17,6 +17,13 @@ from pydub import AudioSegment
 from pydub.utils import which
 from dotenv import load_dotenv
 import os , subprocess
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
+
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
 
@@ -33,11 +40,11 @@ cluster = os.getenv("MONGO_CLUSTER")
 
 if username and cluster:    
     uri = f"mongodb+srv://{username}:{password}@{cluster}/"
-    client = AsyncIOMotorClient(uri)
-    db = client["Developer_Assistant"]
+    mongo_client = AsyncIOMotorClient(uri)
+    db = mongo_client["Developer_Assistant"]
     history_collection = db["conversations"]
 else:
-    client = None
+    mongo_client = None
     db = None
     history_collection = None
 #///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,9 +56,9 @@ AudioSegment.ffprobe = ffprobe_path
 os.environ["PATH"] += os.pathsep + os.path.dirname(ffmpeg_path)
 try:
     subprocess.run([ffmpeg_path, "-version"], capture_output=True, text=True, check=True)
-    print("✅ FFmpeg is working correctly!\n")
+    logging.info("FFmpeg is working correctly")
 except Exception as e:
-    print("❌ FFmpeg check failed:", e, "\n")
+    logging.error(f"FFmpeg check failed: {e}")
 
 #//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 app = FastAPI(title ="AI Developer Assistant", version="1.0")
@@ -60,14 +67,14 @@ class CodeRequest(BaseModel):
     code: str 
     language : str | None = None    
 #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-async def verify_api_key(x_api_key: str = Header(None)):
+async def verify_api_key(x_api_key: str = Header(...)):
     if x_api_key != API_KEY:
         raise HTTPException(status_code=403, detail="Invalid or Missing API Key")
 #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def detect_language(code:str ):
     try:
        return guess_lexer(code).name
-    except:
+    except Exception:
         return "Unknown"
 #////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 async def save_conversation(task:str,code:str,language:str,response:str):
@@ -84,7 +91,7 @@ async def save_conversation(task:str,code:str,language:str,response:str):
     try:
         await history_collection.insert_one(doc)
     except Exception as e:
-        print("Warning: failed to save conversation:", e)
+        logging.warning(f"Failed to save conversation: {e}")
 #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 async def llm_run(model : str , prompt : str , stream = True, max_retries: int = 3):
     payload = {"model" : model ,"prompt" : prompt , "stream" : stream }
@@ -101,14 +108,14 @@ async def llm_run(model : str , prompt : str , stream = True, max_retries: int =
                                         continue
                                     try:
                                         yield json.loads(line)
-                                    except:
+                                    except Exception:
                                         continue
                         return
                 else:
                     resp = await client.post(OLLAMA_URL , json=payload)
                     try:
                         yield resp.json()
-                    except:
+                    except Exception:
                         yield {"response":resp.text}
                     return
         except Exception as e:
@@ -116,7 +123,7 @@ async def llm_run(model : str , prompt : str , stream = True, max_retries: int =
                 await asyncio.sleep(1)
                 continue
             else:
-                yield{"response":f"[ERROR] Model request failed after {max_retries}retries: {str(e)}"}
+                yield {"response": f"[ERROR] Model request failed after {max_retries} retries: {str(e)}"}
                 return    
 #///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
 async def Process_code(task:str , req : "CodeRequest",background_tasks: BackgroundTasks):
@@ -147,16 +154,17 @@ async def Process_code(task:str , req : "CodeRequest",background_tasks: Backgrou
         f"- Do NOT comment trivial lines.\n"
         f"- Keep it concise & professional.\n"
         f"Return only the updated code.\n\n"
-        f"Do NOT alter logic or variable names."
+        f"Do NOT alter logic or variable names.\n\n"
 
         f"{req.code}"
         )
     elif task == "convert":
+        target_lang = req.language or "Python"
         base_prompt += (
-        f"Convert this code to {req.language}.\n"
+        f"Convert this code to {target_lang}.\n"
         f"Rules:\n"
         f"- Keep logic the same\n"
-        f"- Use correct syntax for {req.language}\n"
+        f"- Use correct syntax for {target_lang}\n"
         f"- Follow best coding practices\n"
         f"- Return only the final converted code\n\n"
         f"{req.code}"
@@ -203,7 +211,7 @@ async def Process_code(task:str , req : "CodeRequest",background_tasks: Backgrou
                     save_conversation, task, req.code, language, collected_output)
             except Exception:
                 pass  
-    return StreamingResponse(generate(), media_type="text/plain")
+    return StreamingResponse(generate(), media_type="text/plain; charset=utf-8")
 #/////////////////////////////////////////////////////////////////////////a/////////////////////////////////
 async def Process_diagram(req: CodeRequest, background_tasks: BackgroundTasks):
     task = "diagram"
@@ -221,7 +229,7 @@ Code:\n\n{req.code}
 """
 
     diagram_text = ""
-    print(f" Sending prompt to diagram model:\n{prompt}")
+    logging.debug(prompt)
     async for data in llm_run(DIAGRAM_MODEL, prompt, stream=False):
         if not data:
             continue
@@ -238,7 +246,7 @@ Code:\n\n{req.code}
             background_tasks.add_task(
                 save_conversation, task, req.code, language, diagram_text
             )
-        except:
+        except Exception:
             pass
 
     return diagram_text.strip()
@@ -261,50 +269,61 @@ async def comment_code(req:CodeRequest, background_tasks : BackgroundTasks):
     return await Process_code("Comment",req,background_tasks)
 
 @app.post("/voice-command", dependencies=[Depends(verify_api_key)])
-async def process_voice_commands(
-    background_tasks : BackgroundTasks,   
-    file : UploadFile = File(...),
-    code:str = Form(...)
-        ):
-    try:    
-        with tempfile.NamedTemporaryFile(delete=False,suffix=".wav") as temp_file:
-            contents = await file.read()
-            temp_file.write(contents)
-            temp_file_path = temp_file.name
-        
-        if file.filename.endswith(".mp3"):
-            sound = AudioSegment.from_mp3(temp_file_path)
-            wav_path = temp_file_path.replace(".mp3",".wav")
-            sound.export(wav_path, format="wav")
-            temp_file_path= wav_path
-        
+async def process_voice_command(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    code: str = Form(...),
+):
+    temp_file_path = None
+    try:
+        # Write uploaded audio to a temp file
+        suffix = ".mp3" if (file.filename or "").endswith(".mp3") else ".wav"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(await file.read())
+            temp_file_path = tmp.name
+
+        # Convert mp3 → wav if needed
+        wav_path = temp_file_path
+        if suffix == ".mp3":
+            wav_path = temp_file_path.replace(".mp3", ".wav")
+            AudioSegment.from_mp3(temp_file_path).export(wav_path, format="wav")
+
+        # Transcribe
         recognizer = sr.Recognizer()
-        with sr.AudioFile(temp_file_path) as source:
+        with sr.AudioFile(wav_path) as source:
             audio = recognizer.record(source)
-        
         voice_text = recognizer.recognize_google(audio).lower()
-        print (f"Voice command detected: {voice_text}")
+        logging.info(f"Voice command detected: {voice_text}")
 
-
-    # Task intect   
+        # Intent detection
         if "explain" in voice_text:
-            task = "Explain"
+            task = "explain"
         elif "debug" in voice_text:
-            task = "Debug"
+            task = "debug"
         elif "optimize" in voice_text or "improve" in voice_text:
-            task = "Optimize"
-        else :
-            raise HTTPException(status_code=404 ,detail=f"Unrecognized intent in voice: {voice_text}")
+            task = "optimize"
+        elif "comment" in voice_text:
+            task = "comment"
+        else:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Unrecognized intent in voice: '{voice_text}'. Say explain, debug, optimize, or comment.",
+            )
+
         req = CodeRequest(code=code)
-        return await Process_code(task , req , background_tasks)
+        return await Process_code(task, req, background_tasks)
+
     except sr.UnknownValueError:
         raise HTTPException(status_code=400, detail="Could not understand audio")
     finally:
-        try:
-            if temp_file_path:
-                os.remove(temp_file_path)
-        except:
-            pass
+        # Clean up temp files
+        for p in {temp_file_path, wav_path if 'wav_path' in dir() else None}:
+            if p and os.path.exists(p):
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
+
 #/////////////////////////////////////////////////////////////////////////////////////////////////////
 @app.post("/diagram", dependencies=[Depends(verify_api_key)])
 async def diagram(req: CodeRequest, background_tasks: BackgroundTasks):
@@ -327,17 +346,6 @@ async def get_history():
 @app.post("/convert", dependencies=[Depends(verify_api_key)])
 async def convert_code(req: CodeRequest, background_tasks: BackgroundTasks):
     return await Process_code("Convert", req, background_tasks)
-
-@app.delete ("/history/{conversation_id}", dependencies=[Depends(verify_api_key)])
-async def delete_conversation(conversation_id:str):
-    """delete one convo from database"""
-    if history_collection is None:
-        return {"error": "MongoDB not configured"}
-    result = await history_collection.delete_one({"_id" : ObjectId(conversation_id)})
-    if result.deleted_count == 0:
-        raise HTTPException (status_code = 404 , detail = "Conversation not found")
-    return {"message":f"Conversation {conversation_id} deleted successfully!"}
-  
 @app.delete ("/history/deleteall", dependencies=[Depends(verify_api_key)])
 async def clear_history():
     if history_collection is None:
@@ -346,6 +354,25 @@ async def clear_history():
     await history_collection.delete_many({})
     return {"message":"All conversations have been cleared!"}
 
+@app.delete("/history/{conversation_id}", dependencies=[Depends(verify_api_key)])
+async def delete_conversation(conversation_id: str):
+    """Delete one conversation from database"""
+
+    if history_collection is None:
+        return {"error": "MongoDB not configured"}
+
+    # Validate ObjectId
+    try:
+        obj_id = ObjectId(conversation_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid conversation ID format")
+
+    result = await history_collection.delete_one({"_id": obj_id})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    return {"message": f"Conversation {conversation_id} deleted successfully!"}  
 @app.get("/")
 def home():
     return {"message": "Backend running with Ollama "}
