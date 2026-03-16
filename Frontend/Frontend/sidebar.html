@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AI Developer Assistant</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141418;
+    --surface2: #1c1c22;
+    --border: #2a2a35;
+    --accent: #7c6af7;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --text: #e2e2f0;
+    --muted: #6b6b80;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ─────────────────────────────── */
+  header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, #13131a 0%, #1a1a26 100%);
+    flex-shrink: 0;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    box-shadow: 0 0 12px rgba(124,106,247,0.4);
+  }
+  .logo h1 { font-size: 13px; font-weight: 700; letter-spacing: 0.02em; color: var(--text); }
+  .logo span { font-size: 10px; color: var(--muted); display: block; margin-top: 1px; }
+
+  /* ── Tabs ────────────────────────────────── */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 3px;
+  }
+  .tab {
+    flex: 1; padding: 5px 6px;
+    background: none; border: none; color: var(--muted);
+    font-size: 11px; font-weight: 500; cursor: pointer;
+    border-radius: 6px; transition: all 0.15s;
+    text-align: center;
+  }
+  .tab.active { background: var(--accent); color: #fff; }
+  .tab:hover:not(.active) { color: var(--text); background: var(--surface2); }
+
+  /* ── Panels ─────────────────────────────── */
+  .panels { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .panel { display: none; flex-direction: column; gap: 10px; }
+  .panel.active { display: flex; }
+
+  /* ── Action Buttons ──────────────────────── */
+  .action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .action-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 12px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .action-btn:hover { background: var(--surface2); border-color: var(--accent); transform: translateY(-1px); }
+  .action-btn:active { transform: translateY(0); }
+  .action-btn .icon { font-size: 14px; flex-shrink: 0; }
+  .action-btn.full-width { grid-column: span 2; justify-content: center; }
+
+  /* ── Convert Form ────────────────────────── */
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+  select, input[type=text] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 7px 10px;
+    font-size: 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+
+  /* ── Output Box ──────────────────────────── */
+  .output-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .output-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 10px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .output-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .output-actions { display: flex; gap: 5px; }
+  .mini-btn {
+    background: none; border: 1px solid var(--border);
+    color: var(--muted); padding: 3px 7px; border-radius: 4px;
+    font-size: 10px; cursor: pointer; transition: all 0.1s;
+  }
+  .mini-btn:hover { color: var(--text); border-color: var(--accent); }
+  .output-content {
+    padding: 12px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 80px;
+    max-height: 320px;
+    overflow-y: auto;
+    color: var(--text);
+  }
+  .output-content.placeholder { color: var(--muted); font-family: sans-serif; font-size: 12px; }
+
+  /* ── Status Bar ──────────────────────────── */
+  .status-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    border-radius: 0 0 8px 8px;
+    font-size: 11px; color: var(--muted);
+    min-height: 28px;
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted); flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .status-dot.running { background: var(--yellow); animation: pulse 1s infinite; }
+  .status-dot.done    { background: var(--green); }
+  .status-dot.error   { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── Diagram Panel ───────────────────────── */
+  .diagram-wrap {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+  }
+  .diagram-placeholder { color: #aaa; font-size: 12px; font-family: sans-serif; }
+
+  /* ── History Panel ───────────────────────── */
+  .history-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .history-item-header { display: flex; align-items: center; justify-content: space-between; }
+  .history-task { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+  .history-task.explain  { color: #60a5fa; }
+  .history-task.debug    { color: var(--red); }
+  .history-task.optimize { color: var(--green); }
+  .history-task.comment  { color: var(--yellow); }
+  .history-task.convert  { color: #f472b6; }
+  .history-task.diagram  { color: var(--accent2); }
+  .history-time { font-size: 10px; color: var(--muted); }
+  .history-preview { font-family: var(--font-mono); font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ── Voice Panel ─────────────────────────── */
+  .voice-area {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: center;
+  }
+  .mic-btn {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; cursor: pointer;
+    font-size: 24px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(124,106,247,0.3);
+  }
+  .mic-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(124,106,247,0.5); }
+  .mic-btn.recording { animation: mic-pulse 1s infinite; background: linear-gradient(135deg, #ef4444, #f97316); }
+  @keyframes mic-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)} 50%{box-shadow:0 0 0 12px rgba(239,68,68,0)} }
+  .voice-hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .voice-hint strong { color: var(--text); }
+
+  /* ── Config warning ──────────────────────── */
+  .warning-banner {
+    background: rgba(251,191,36,0.1);
+    border: 1px solid rgba(251,191,36,0.3);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 11px;
+    color: var(--yellow);
+    line-height: 1.5;
+  }
+
+  .section-label {
+    font-size: 10px; color: var(--muted); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 2px;
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">✦</div>
+    <div>
+      <h1>AI Developer Assistant</h1>
+      <span>Powered by Qwen2.5-Coder · Local AI</span>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('actions')">Actions</button>
+    <button class="tab" onclick="switchTab('diagram')">Diagram</button>
+    <button class="tab" onclick="switchTab('voice')">Voice</button>
+    <button class="tab" onclick="switchTab('history')">History</button>
+  </div>
+</header>
+
+<!-- ══ ACTIONS TAB ═══════════════════════════════════════════════ -->
+<div id="tab-actions" class="panels panel active">
+
+  <div class="warning-banner" id="config-warn" style="display:none">
+    ⚠ No API key set. Go to <strong>Settings → AI Developer Assistant → Api Key</strong>.
+  </div>
+
+  <div>
+    <div class="section-label">Quick Actions</div>
+    <div class="action-grid">
+      <button class="action-btn" onclick="runTask('explain')"><span class="icon">📖</span> Explain</button>
+      <button class="action-btn" onclick="runTask('debug')"><span class="icon">🐛</span> Debug</button>
+      <button class="action-btn" onclick="runTask('optimize')"><span class="icon">⚡</span> Optimize</button>
+      <button class="action-btn" onclick="runTask('comment')"><span class="icon">💬</span> Comment</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Convert Language</div>
+    <div class="form-group">
+      <select id="convert-lang">
+        <option value="Python">Python</option>
+        <option value="JavaScript">JavaScript</option>
+        <option value="TypeScript">TypeScript</option>
+        <option value="Java">Java</option>
+        <option value="C++">C++</option>
+        <option value="C#">C#</option>
+        <option value="Go">Go</option>
+        <option value="Rust">Rust</option>
+        <option value="Kotlin">Kotlin</option>
+        <option value="Swift">Swift</option>
+        <option value="PHP">PHP</option>
+        <option value="Ruby">Ruby</option>
+      </select>
+    </div>
+    <div style="margin-top:6px">
+      <button class="action-btn full-width" onclick="runConvert()"><span class="icon">🔄</span> Convert to selected language</button>
+    </div>
+  </div>
+
+  <div class="output-box">
+    <div class="output-header">
+      <span class="output-label" id="output-label">Output</span>
+      <div class="output-actions">
+        <button class="mini-btn" onclick="copyOutput()">Copy</button>
+        <button class="mini-btn" onclick="applyToEditor()">Apply</button>
+        <button class="mini-btn" onclick="clearOutput()">Clear</button>
+      </div>
+    </div>
+    <div class="output-content placeholder" id="output-content">
+      Select code in the editor, then press a button above.
+      Or use Ctrl+Alt+E / right-click → AI Assistant.
+    </div>
+    <div class="status-bar">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Ready</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DIAGRAM TAB ════════════════════════════════════════════════ -->
+<div id="tab-diagram" class="panels panel">
+  <button class="action-btn full-width" onclick="runDiagram()"><span class="icon">🗺</span> Generate Flowchart from Editor Code</button>
+  <div class="output-box">
+    <div class="output-header">
+      <span class="output-label">Mermaid Source</span>
+      <div class="output-actions">
+        <button class="mini-btn" onclick="copyMermaid()">Copy</button>
+      </div>
+    </div>
+    <div class="output-content placeholder" id="mermaid-source">Mermaid code will appear here…</div>
+    <div class="status-bar">
+      <div class="status-dot" id="diag-status-dot"></div>
+      <span id="diag-status-text">Ready</span>
+    </div>
+  </div>
+  <div class="section-label">Live Preview</div>
+  <div class="diagram-wrap" id="diagram-preview">
+    <span class="diagram-placeholder">Diagram renders here</span>
+  </div>
+</div>
+
+<!-- ══ VOICE TAB ══════════════════════════════════════════════════ -->
+<div id="tab-voice" class="panels panel">
+  <div class="voice-area">
+    <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">🎙</button>
+    <div class="voice-hint">
+      Click the mic and say:<br>
+      <strong>"Explain this"</strong>, <strong>"Debug this"</strong>, or <strong>"Optimize this"</strong><br><br>
+      <span style="color:#6b6b80;font-size:10px">Recording uses the browser MediaRecorder API. The WAV file is sent to /voice-command with your current editor code.</span>
+    </div>
+    <div id="voice-status" style="font-size:11px;color:var(--muted)">Idle</div>
+  </div>
+  <div class="output-box">
+    <div class="output-header"><span class="output-label">Voice Output</span></div>
+    <div class="output-content placeholder" id="voice-output">Voice responses appear here…</div>
+  </div>
+</div>
+
+<!-- ══ HISTORY TAB ════════════════════════════════════════════════ -->
+<div id="tab-history" class="panels panel">
+  <div style="display:flex;gap:6px">
+    <button class="action-btn" style="flex:1" onclick="loadHistory()"><span class="icon">🔄</span> Refresh</button>
+    <button class="action-btn" style="flex:1" onclick="clearHistory()"><span class="icon">🗑</span> Clear All</button>
+  </div>
+  <div id="history-list" style="display:flex;flex-direction:column;gap:8px">
+    <div style="color:var(--muted);font-size:12px;text-align:center;padding:20px">Click Refresh to load history</div>
+  </div>
+</div>
+
+<script>
+  const vscode = acquireVsCodeApi();
+  let outputText = '';
+  let mermaidText = '';
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecording = false;
+
+  // ── Tab switching ──────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t,i)=>{
+      t.classList.toggle('active', ['actions','diagram','voice','history'][i]===name);
+    });
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.add('active');
+    if(name==='history') loadHistory();
+  }
+
+  // ── Editor code helper ─────────────────────────────────────────
+  function getEditorCode(cb) {
+    const handler = (e) => {
+      if(e.data.command==='editorCode'||e.data.command==='noEditor') {
+        window.removeEventListener('message', handler);
+        cb(e.data);
+      }
+    };
+    window.addEventListener('message', handler);
+    vscode.postMessage({command:'getEditorCode'});
+  }
+
+  // ── Quick task ─────────────────────────────────────────────────
+  function runTask(task) {
+    getEditorCode((data)=>{
+      if(data.command==='noEditor'){setStatus('No active editor','error');return;}
+      vscode.postMessage({command:'runTask', task, code:data.code, language:data.language});
+    });
+  }
+
+  function runConvert() {
+    const lang = document.getElementById('convert-lang').value;
+    getEditorCode((data)=>{
+      if(data.command==='noEditor'){setStatus('No active editor','error');return;}
+      vscode.postMessage({command:'runTask', task:'convert', code:data.code, language:lang});
+    });
+  }
+
+  function runDiagram() {
+    getEditorCode((data)=>{
+      if(data.command==='noEditor'){setDiagStatus('No active editor','error');return;}
+      vscode.postMessage({command:'diagram', code:data.code});
+    });
+  }
+
+  // ── Output helpers ─────────────────────────────────────────────
+  function setOutput(text) {
+    outputText = text;
+    const el = document.getElementById('output-content');
+    el.textContent = text;
+    el.classList.remove('placeholder');
+  }
+  function appendOutput(chunk) {
+    outputText += chunk;
+    const el = document.getElementById('output-content');
+    el.classList.remove('placeholder');
+    el.textContent = outputText;
+    el.scrollTop = el.scrollHeight;
+  }
+  function clearOutput() {
+    outputText = '';
+    const el = document.getElementById('output-content');
+    el.textContent = 'Output cleared.';
+    el.classList.add('placeholder');
+  }
+  function copyOutput() { navigator.clipboard?.writeText(outputText); }
+  function applyToEditor() { if(outputText) vscode.postMessage({command:'applyToEditor',code:outputText}); }
+  function setLabel(text) { document.getElementById('output-label').textContent = text; }
+
+  function setStatus(text, state='idle') {
+    document.getElementById('status-text').textContent = text;
+    const dot = document.getElementById('status-dot');
+    dot.className = 'status-dot' + (state!=='idle'?' '+state:'');
+  }
+  function setDiagStatus(text,state='idle') {
+    document.getElementById('diag-status-text').textContent=text;
+    const dot=document.getElementById('diag-status-dot');
+    dot.className='status-dot'+(state!=='idle'?' '+state:'');
+  }
+
+  // ── Mermaid helpers ────────────────────────────────────────────
+  function copyMermaid() { navigator.clipboard?.writeText(mermaidText); }
+
+  async function renderMermaid(code) {
+    mermaidText = code;
+    document.getElementById('mermaid-source').textContent = code;
+    document.getElementById('mermaid-source').classList.remove('placeholder');
+    const wrap = document.getElementById('diagram-preview');
+    try {
+      mermaid.initialize({startOnLoad:false, theme:'default'});
+      const {svg} = await mermaid.render('mermaid-svg-'+Date.now(), code);
+      wrap.innerHTML = svg;
+    } catch(e) {
+      wrap.innerHTML = '<span style="color:red;font-size:11px">Render error: '+e.message+'</span>';
+    }
+  }
+
+  // ── History ────────────────────────────────────────────────────
+  function loadHistory() { vscode.postMessage({command:'getHistory'}); }
+  function clearHistory() {
+    if(confirm('Clear all conversation history from MongoDB?')) {
+      vscode.postMessage({command:'clearHistory'});
+    }
+  }
+
+  function renderHistory(history) {
+    const list = document.getElementById('history-list');
+    if(!history||!history.length){
+      list.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px">No history yet</div>';
+      return;
+    }
+    list.innerHTML = history.map(item=>`
+      <div class="history-item">
+        <div class="history-item-header">
+          <span class="history-task ${item.task||''}">${(item.task||'unknown').toUpperCase()}</span>
+          <span class="history-time">${item.created_at||''}</span>
+        </div>
+        <div class="history-preview">${(item.code||'').substring(0,80)}…</div>
+      </div>
+    `).join('');
+  }
+
+  // ── Voice recording ────────────────────────────────────────────
+  async function toggleRecording() {
+    if(isRecording){ stopRecording(); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.onstop = sendVoice;
+      mediaRecorder.start();
+      isRecording = true;
+      document.getElementById('mic-btn').classList.add('recording');
+      document.getElementById('voice-status').textContent = '🔴 Recording… click to stop';
+    } catch(e) {
+      document.getElementById('voice-status').textContent = 'Mic access denied: '+e.message;
+    }
+  }
+
+  function stopRecording() {
+    mediaRecorder?.stop();
+    isRecording = false;
+    document.getElementById('mic-btn').classList.remove('recording');
+    document.getElementById('voice-status').textContent = 'Processing…';
+  }
+
+  async function sendVoice() {
+    const blob = new Blob(audioChunks, {type:'audio/wav'});
+    document.getElementById('voice-status').textContent = 'Sending to backend…';
+    getEditorCode(async (data) => {
+      if(data.command==='noEditor'){
+        document.getElementById('voice-status').textContent='No active editor';
+        return;
+      }
+      // Convert blob to base64 and send to extension host for multipart POST
+      const reader = new FileReader();
+      reader.onload = () => {
+        vscode.postMessage({
+          command: 'voiceCommand',
+          fileData: reader.result,
+          fileName: 'recording.wav',
+          code: data.code
+        });
+      };
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  // ── Message handler ────────────────────────────────────────────
+  window.addEventListener('message', (event) => {
+    const msg = event.data;
+    switch(msg.command) {
+      case 'startTask':
+        outputText = '';
+        setLabel(msg.task.charAt(0).toUpperCase()+msg.task.slice(1)+' — streaming…');
+        setStatus('Running '+msg.task+'…', 'running');
+        break;
+      case 'streamStart':
+        outputText = '';
+        document.getElementById('output-content').textContent = '';
+        document.getElementById('output-content').classList.remove('placeholder');
+        setStatus('Streaming…','running');
+        break;
+      case 'streamChunk':
+        appendOutput(msg.chunk);
+        break;
+      case 'streamEnd':
+        setLabel('Output'); setStatus('Done ✓','done');
+        setTimeout(()=>setStatus('Ready','idle'),3000);
+        break;
+      case 'streamError':
+        setOutput('[Error] '+msg.message);
+        setStatus('Error','error');
+        break;
+      case 'diagramStart':
+        setDiagStatus('Generating…','running');
+        document.getElementById('mermaid-source').textContent='Generating diagram…';
+        document.getElementById('diagram-preview').innerHTML='<span class="diagram-placeholder">Rendering…</span>';
+        break;
+      case 'diagramReady':
+        setDiagStatus('Done ✓','done');
+        renderMermaid(msg.mermaid);
+        setTimeout(()=>setDiagStatus('Ready','idle'),3000);
+        break;
+      case 'historyData':
+        renderHistory(msg.history);
+        break;
+      case 'historyClearedOk':
+        loadHistory();
+        break;
+      case 'voiceResult':
+        document.getElementById('voice-output').textContent = msg.text;
+        document.getElementById('voice-output').classList.remove('placeholder');
+        document.getElementById('voice-status').textContent = '✅ Done';
+        break;
+      case 'voiceError':
+        document.getElementById('voice-status').textContent = '❌ ' + msg.message;
+        break;
+    }
+  });
+
+  // ── Init ───────────────────────────────────────────────────────
+  mermaid.initialize({startOnLoad:false});
+</script>
+</body>
+</html>

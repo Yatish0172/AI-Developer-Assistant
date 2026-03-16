@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Flowchart</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@700;800&display=swap');
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --border: #1e2330;
+    --accent: #00e5ff;
+    --text: #e2e8f0;
+    --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .subtitle { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .actions { display: flex; gap: 8px; }
+  .btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .diagram-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    overflow: auto;
+  }
+  .mermaid {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 100%;
+  }
+  .code-section {
+    border-top: 1px solid var(--border);
+    padding: 16px 24px;
+  }
+  .code-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 11px;
+    color: var(--accent);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+  pre::-webkit-scrollbar { width: 4px; }
+  pre::-webkit-scrollbar-thumb { background: var(--border); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="title">🗺️ Flowchart Preview</div>
+    <div class="subtitle">AI-generated Mermaid diagram</div>
+  </div>
+  <div class="actions">
+    <button class="btn" onclick="copyCode()">📋 Copy Mermaid</button>
+  </div>
+</header>
+
+<div class="diagram-area">
+  <div class="mermaid">{{MERMAID_CODE}}</div>
+</div>
+
+<div class="code-section">
+  <div class="code-label">Mermaid Source</div>
+  <pre id="mermaidCode">{{MERMAID_CODE}}</pre>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      background: '#13161e',
+      primaryColor: '#00e5ff22',
+      primaryTextColor: '#e2e8f0',
+      lineColor: '#00e5ff',
+      edgeLabelBackground: '#13161e'
+    }
+  });
+
+  function copyCode() {
+    const code = document.getElementById('mermaidCode').textContent;
+    navigator.clipboard.writeText(code);
+  }
+</script>
+</body>
+</html>
