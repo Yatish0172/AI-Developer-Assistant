@@ -1,9 +1,9 @@
 # AI Developer Assistant
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-An intelligent backend-powered assistant that helps developers **explain**, **debug**, **optimize**, **convert**, and **visualize code with flowcharts** using natural language, voice commands, or full-file analysis.
+An intelligent AI-powered assistant that helps developers **explain**, **debug**, **optimize**, **convert**, **comment**, and **visualize code with flowcharts** — now with a fully-built **VS Code Extension** that connects directly to your local AI backend.
 
-Built using **FastAPI, Ollama (Qwen2.5 Coder), MongoDB Atlas**, and **Speech Recognition**.
+Built using **FastAPI, Ollama (Qwen2.5 Coder), MongoDB Atlas**, **Speech Recognition**, and the **VS Code Extension API**.
 
 ## Features
 
@@ -27,15 +27,15 @@ POST /convert
 }
 ```
 
-###  Real-Time Flowchart Rendering (Live Preview in Editor)
+### Real-Time Flowchart Rendering (Live Preview in Editor)
 
-Your AI Developer Assistant supports live diagram updates directly in the code editor through frontend integration (coming soon).
+The VS Code Extension renders Mermaid diagrams in a live side panel — no browser, no copy-paste.
 
-🔹 As the developer writes code, your extension triggers /diagram in the backend
-🔹 The backend generates Mermaid syntax
-🔹 The frontend renders it above the code in real time (like AI-powered “Explain” panels in VS Code)
+🔹 Select any code in the editor and click **Generate Flowchart**
+🔹 The backend generates Mermaid syntax using Qwen2.5-Coder
+🔹 The extension renders it instantly in a side panel with copy support
 
-
+```
 ╔═════════════════════════════╗
 ║     Live Diagram Preview     ║
 ╚═════════════════════════════╝
@@ -45,41 +45,62 @@ flowchart TD
     B -->|True| C[Execute Function A]
     B -->|False| D[Return Error]
     C --> E[End]
+```
+
 ---
 
-🛠 Frontend Integration (Concept Example)
+### 🛠 VS Code Extension — Now Live
 
-// VS Code Extension (pseudo-logic)
-editor.onDidChangeModelContent(() => {
+The extension is fully built and integrated with the backend.
+
+```typescript
+// How it works under the hood
+editor.onDidReceiveMessage(() => {
   fetch("/diagram", { code: currentCode })
     .then(res => updateDiagramPanel(res.diagram));
 });
+```
 
+---
+
+## Why It's Powerful
+
+| Before | Now |
+|--------|-----|
+| Manually creating flowcharts | Auto-generated from code |
+| Switching between browser and editor | Everything inside VS Code |
+| Only on-demand via API | Sidebar buttons + keyboard shortcuts |
+| Static documentation | Dynamic visual code understanding |
 
 ---
 
-## Why It’s Powerful
-
-#Before	 Now
-
-Manually creating flowcharts	Auto-generated
-Only on-demand	Live & continuous
-Static documentation	Dynamic visual code understanding
-
----
 ## Workflow Example
 
-1. User writes or pastes code
-2. Extension sends request to `/diagram`
-3. Backend generates Mermaid code
-4. UI renders diagram above the code
+1. Open any code file in VS Code
+2. Select code or leave cursor in the file
+3. Click an action in the AI Assistant sidebar (or use a shortcut)
+4. Response streams in real time directly in the output panel
 
+---
 
 ### Voice Command Support
-Upload an audio file and speak commands like:
+Record your voice and speak commands like:
 - "Explain this code"
 - "Debug this"
 - "Optimize this"
+
+The backend transcribes the audio and runs the right task on your active file automatically.
+
+### Keyboard Shortcuts
+
+| Action | Shortcut |
+|--------|----------|
+| Explain | `Ctrl+Alt+E` |
+| Debug | `Ctrl+Alt+D` |
+| Optimize | `Ctrl+Alt+O` |
+| Add Comments | `Ctrl+Alt+C` |
+| Generate Flowchart | `Ctrl+Alt+F` |
+| Open Panel | `Ctrl+Alt+A` |
 
 ### Secure API Key Validation
 All routes require a valid `x-api-key` header.
@@ -98,23 +119,49 @@ Supports:
 - Clear all history
 
 ### Streaming Responses
-Generates responses in real-time like ChatGPT.
+Generates responses in real-time like ChatGPT — streamed token by token directly into the sidebar.
 
 ## Technology Stack
 
 | Component | Implementation |
 |-----------|----------------|
 | Backend | FastAPI |
-| AI Model | Qwen2.5-Coder |
+| AI Model | Qwen2.5-Coder (Ollama) |
 | Diagram Model | Qwen2.5-Coder |
+| VS Code Extension | TypeScript + VS Code API |
+| Diagram Rendering | Mermaid.js |
 | Speech Recognition | pydub, SpeechRecognition |
 | Database | MongoDB Atlas |
-| Streaming | httpx Async |
+| Streaming | httpx Async / Node.js http |
 | Auth | Custom API Key |
+
+## Project Structure
+
+```
+AI-Developer-Assistant/
+├── backend/
+│   ├── main.py
+│   ├── requirements.txt
+│   └── .env
+├── Frontend/                 ← VS Code Extension
+│   ├── Frontend/
+│   │   ├── sidebar.html      ← Sidebar webview UI
+│   │   └── diagramPanel.html ← Flowchart viewer
+│   ├── src/
+│   │   ├── extension.ts      ← Entry point & commands
+│   │   ├── sidebarProvider.ts← Sidebar logic
+│   │   ├── diagramPanel.ts   ← Diagram panel
+│   │   └── api.ts            ← HTTP client
+│   ├── media/
+│   │   └── sidebar-icon.svg
+│   ├── package.json
+│   └── tsconfig.json
+└── README.md
+```
 
 ## Environment Setup
 
-Create `.env` file:
+Create `.env` file inside `backend/`:
 
 ```
 MONGO_USER=your_mongodb_user
@@ -125,7 +172,8 @@ API_KEY=YourCustomAPIKey123
 
 ## Running the Server
 
-```
+```bash
+cd backend
 uvicorn main:app --reload
 ```
 
@@ -133,6 +181,16 @@ Swagger UI is available at:
 ```
 http://127.0.0.1:8000/docs
 ```
+
+## Running the VS Code Extension
+
+```bash
+cd Frontend
+npm install
+npm run compile
+```
+
+Open the `Frontend/` folder in VS Code and press **F5**. Configure your API URL and key under **Settings → Extensions → AI Developer Assistant**.
 
 ## Example: Diagram API
 
@@ -150,44 +208,12 @@ Response:
 }
 ```
 
-## Project Structure
-
-```
-AI-Developer-Assistant/
-│── main.py
-│── requirements.txt
-│── .env
-│── README.md
-```
-## Future Plans
-
-The project is being extended into a **VS Code Extension** with the following goals:
-
-- **Real-time AI assistance inside the editor** (explain, debug, optimize without leaving VS Code)
-- **Live flowchart rendering above code during typing**
-- **Voice-command support integrated directly into VS Code**
-- **Automatic code language detection and model selection**
-- **Intelligent suggestions and code generation while writing code**
-- **Support for multiple file types and frameworks**
-- **Shortcut-based interactions** (e.g., `Ctrl + Alt + E` to explain code)
-- **Seamless extension-to-backend communication using REST APIs**
-
-The backend developed in this project will power the VS Code extension, ensuring that AI capabilities work efficiently and in real time.
-
-A prototype extension structure will be implemented using:
-- `TypeScript` and `VS Code Extension API`
-- REST API integration to call backend endpoints
-- Local caching and performance optimization
-
-Development will begin after stabilizing the backend APIs.
-
-
 ## Author
-**Yatish Sharma**  
-AI & Full-Stack Developer  
+**Yatish Sharma**
+AI & Full-Stack Developer
 UPES Dehradun
 
 ## © Copyright
-AI Developer Assistant (Backend & Future VS Code Extension)  
-© 2025 Yatish Sharma. All rights reserved.  
+AI Developer Assistant
+© 2025 Yatish Sharma. All rights reserved.
 Licensed under the MIT License.
